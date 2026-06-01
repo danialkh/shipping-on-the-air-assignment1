@@ -21,6 +21,8 @@ Here is the raw Markdown text ready for you to copy and paste:
 The platform applies **Domain-Driven Design (DDD)** principles to orchestrate decentralized, event-driven microservices.
 
 ---
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/39069067-e8dc-4d28-bb1c-f91a77bba045" />
+
 
 ## 📂 Repository Structure
 
