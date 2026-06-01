@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
@@ -281,10 +281,19 @@ function MapVisualisation({ shipment }) {
 }
 
 function Prototype() {
+  const [shipments, setShipments] = useState([]); // Injected local state instead of missing mockData global reference
   const [selected, setSelected] = useState(null);
   const [tab, setTab] = useState("timeline");
   const [form, setForm] = useState({ from: "", to: "", weight: "", date: "", notes: "" });
   const [view, setView] = useState("list");
+
+  // Fetch hook matching exact target URL
+  useEffect(() => {
+    fetch("http://localhost:3001/shipments")
+      .then((res) => res.json())
+      .then((data) => setShipments(data))
+      .catch((err) => console.error("Error loading mock api data:", err));
+  }, []);
 
   return (
     <div>
@@ -301,21 +310,27 @@ function Prototype() {
         <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 1fr" : "1fr", gap: 16 }}>
           {/* Shipment list */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {mockShipments.map(s => (
+            {shipments.map(s => (
               <div key={s.id} onClick={() => setSelected(s.id === selected?.id ? null : s)} style={{ background: selected?.id === s.id ? colors.surface2 : colors.surface, border: `1px solid ${selected?.id === s.id ? colors.accent : colors.border}`, borderRadius: 10, padding: "12px 16px", cursor: "pointer", transition: "all .2s" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                   <div>
                     <span style={{ color: colors.accent, fontWeight: 700, fontSize: 13 }}>{s.id}</span>
-                    <span style={{ color: colors.muted, fontSize: 12, marginLeft: 10 }}>{s.weight}</span>
+                    {/* ADAPTER: Map to matching nested packageSpec weight definition */}
+                    <span style={{ color: colors.muted, fontSize: 12, marginLeft: 10 }}>{s.packageSpec?.weight} kg</span>
                   </div>
                   <span style={{ color: statusColor[s.status], fontSize: 12, fontWeight: 600 }}>{s.status}</span>
                 </div>
-                <div style={{ color: colors.text, fontSize: 12, marginBottom: 6 }}>{s.from} → {s.to}</div>
+                {/* ADAPTER: Map to matching nested origin/destination addresses */}
+                <div style={{ color: colors.text, fontSize: 12, marginBottom: 6 }}>{s.origin?.address} → {s.destination?.address}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ flex: 1 }}>
-                    <ProgressBar pct={s.progress} color={statusColor[s.status]} />
+                    {/* ADAPTER: Provide logical visual progress fallback state */}
+                    <ProgressBar pct={s.status === "IN_TRANSIT" ? 50 : s.status === "DELIVERED" ? 100 : 0} color={statusColor[s.status]} />
                   </div>
-                  <span style={{ color: colors.muted, fontSize: 11, whiteSpace: "nowrap" }}>ETA {s.eta}</span>
+                  {/* ADAPTER: Display cleanly converted latest window ISO value string */}
+                  <span style={{ color: colors.muted, fontSize: 11, whiteSpace: "nowrap" }}>
+                    ETA {s.timeWindow?.latest ? new Date(s.timeWindow.latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}
+                  </span>
                 </div>
               </div>
             ))}
@@ -331,7 +346,8 @@ function Prototype() {
                 </div>
                 <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: colors.muted, cursor: "pointer", fontSize: 18 }}>×</button>
               </div>
-              <div style={{ color: colors.text, fontSize: 13, marginBottom: 12 }}>{selected.from} → {selected.to}</div>
+              {/* ADAPTER: Map detail panel address paths */}
+              <div style={{ color: colors.text, fontSize: 13, marginBottom: 12 }}>{selected.origin?.address} → {selected.destination?.address}</div>
               <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                 {["timeline", "map"].map(t => (
                   <button key={t} onClick={() => setTab(t)} style={{ padding: "5px 14px", borderRadius: 5, border: `1px solid ${tab === t ? colors.accent : colors.border}`, background: tab === t ? colors.accent + "22" : "transparent", color: tab === t ? colors.accent : colors.muted, cursor: "pointer", fontSize: 12 }}>
@@ -366,7 +382,6 @@ function Prototype() {
     </div>
   );
 }
-
 // ── Section renderers ────────────────────────────────────────────────────────
 
 function SectionOverview() {
