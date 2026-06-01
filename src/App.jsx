@@ -176,6 +176,8 @@ function AggregateCard({ title, root, fields, methods, color }) {
 
 // ── Prototype ────────────────────────────────────────────────────────────────
 
+
+
 const mockShipments = [
   { id: "SHP-001", from: "Milan Central", to: "Rome Termini", weight: "1.2 kg", status: "In Transit", eta: "14:32", progress: 62, drone: "DRN-07", lat: 43.8, lon: 11.2 },
   { id: "SHP-002", from: "Bologna Airport", to: "Florence Duomo", weight: "0.4 kg", status: "Pending", eta: "16:05", progress: 0, drone: "—", lat: null, lon: null },
@@ -192,30 +194,57 @@ function ProgressBar({ pct, color }) {
     </div>
   );
 }
-
 function TrackingTimeline({ shipment }) {
-  const events = shipment.status === "Delivered"
+  const currentStatus = shipment.status?.toUpperCase();
+
+  // Parse real timestamp values into clean time formats
+  const orderTime = shipment.createdAt
+    ? new Date(shipment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : "—";
+
+  const etaTime = shipment.timeWindow?.latest 
+    ? new Date(shipment.timeWindow.latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+    : "—";
+
+  // Grab location metrics from payload safely
+  const originName = shipment.origin?.address || "Origin";
+  const destName = shipment.destination?.address || "Destination";
+  const weightInfo = shipment.packageSpec?.weight ? ` (${shipment.packageSpec.weight} kg)` : "";
+
+  // DYNAMIC DRONE DATA WITH SAFE FALLBACKS
+  const droneId = shipment.drone?.id || `DRN-${shipment.id?.split('-')[1] || 'ASSIGNING'}`;
+  const droneModel = shipment.drone?.model || (shipment.packageSpec?.weight > 1 ? "Heavy-Lifter V2" : "Swift-Flyer X1");
+  const droneBattery = shipment.drone?.battery !== undefined ? `${shipment.drone.battery}%` : "84%";
+
+  // DYNAMIC MISSION DATA WITH SAFE FALLBACK
+  // Checks if the API has a missionId, otherwise falls back to a temporary layout string
+  const missionId = shipment.missionId || `MSN-${shipment.id?.split('-')[1] || 'PENDING'}`;
+
+  // Populate dynamic events arrays using real backend properties
+  const events = currentStatus === "DELIVERED"
     ? [
-        { time: "10:00", label: "Order placed", done: true },
-        { time: "10:08", label: "Drone assigned (DRN-12)", done: true },
-        { time: "10:15", label: "Drone departed Venice Port", done: true },
-        { time: "10:41", label: "Waypoint WP-3 reached", done: true },
-        { time: "11:02", label: "Package delivered — Padova Station", done: true },
+        { time: orderTime, label: `Order placed for shipment ${shipment.id} [Mission: ${missionId}]`, done: true },
+        { time: "—", label: `Drone ${droneId} (${droneModel}) secured package${weightInfo}`, done: true },
+        { time: "—", label: `Departed facility at ${originName}`, done: true },
+        { time: "—", label: "Route waypoints completed", done: true },
+        { time: etaTime, label: `Package delivered successfully to ${destName}`, done: true },
       ]
-    : shipment.status === "In Transit"
+    : currentStatus === "IN_TRANSIT"
     ? [
-        { time: "13:00", label: "Order placed", done: true },
-        { time: "13:07", label: `Drone assigned (${shipment.drone})`, done: true },
-        { time: "13:12", label: "Drone departed", done: true },
-        { time: "14:00", label: "Waypoint WP-2 reached", done: shipment.progress > 40 },
-        { time: shipment.eta, label: "Estimated arrival", done: false },
+        { time: orderTime, label: `Order placed for shipment ${shipment.id}`, done: true },
+        { time: "—", label: `Mission Active: ${missionId}`, done: true }, // Highlight active mission
+        { time: "—", label: `Drone routing active: ${droneId} [Model: ${droneModel}]`, done: true },
+        { time: "—", label: `Departed from ${originName} — Battery: ${droneBattery}`, done: true },
+        { time: "—", label: `En route to ${destName}`, done: true },
+        { time: etaTime, label: "Estimated arrival window", done: false },
       ]
-    : [
-        { time: "16:00", label: "Order placed", done: true },
-        { time: "—", label: "Awaiting drone assignment", done: false },
-        { time: "—", label: "Departure", done: false },
-        { time: shipment.eta, label: "Estimated arrival", done: false },
+    : [ // PENDING state
+        { time: orderTime, label: `Order registered for shipment ${shipment.id}`, done: true },
+        { time: "—", label: `Awaiting mission & drone assignment at ${originName}`, done: false }, // Updated label
+        { time: "—", label: `Scheduled dispatch to ${destName}`, done: false },
+        { time: etaTime, label: "Estimated delivery target", done: false },
       ];
+
   return (
     <div style={{ paddingLeft: 16 }}>
       {events.map((e, i) => (
@@ -233,7 +262,6 @@ function TrackingTimeline({ shipment }) {
     </div>
   );
 }
-
 function MapVisualisation({ shipment }) {
   // Simple SVG Italy shape approximation with drone position dot
   const droneX = shipment.progress > 0 ? 100 + (shipment.progress / 100) * 200 : null;
@@ -286,6 +314,10 @@ function Prototype() {
   const [tab, setTab] = useState("timeline");
   const [form, setForm] = useState({ from: "", to: "", weight: "", date: "", notes: "" });
   const [view, setView] = useState("list");
+  const [progress, setProgress] = useState("list");
+
+
+  
 
   // Fetch hook matching exact target URL
   useEffect(() => {
@@ -325,7 +357,7 @@ function Prototype() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ flex: 1 }}>
                     {/* ADAPTER: Provide logical visual progress fallback state */}
-                    <ProgressBar pct={s.status === "IN_TRANSIT" ? 50 : s.status === "DELIVERED" ? 100 : 0} color={statusColor[s.status]} />
+                    <ProgressBar pct={s.status === "IN_TRANSIT" ? 50 : s.status === "DELIVERED" ? 100 : 0} color={colors.green} />
                   </div>
                   {/* ADAPTER: Display cleanly converted latest window ISO value string */}
                   <span style={{ color: colors.muted, fontSize: 11, whiteSpace: "nowrap" }}>
