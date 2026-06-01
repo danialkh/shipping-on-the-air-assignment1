@@ -185,7 +185,7 @@ const mockShipments = [
   { id: "SHP-004", from: "Turin Porta Nuova", to: "Genova Brignole", weight: "0.8 kg", status: "In Transit", eta: "15:47", progress: 31, drone: "DRN-03", lat: 44.5, lon: 8.7 },
 ];
 
-const statusColor = { "In Transit": colors.accent, Pending: colors.yellow, Delivered: colors.green, Failed: colors.red };
+const statusColor = { "IN_TRANSIT": colors.accent, "PENDING": colors.yellow, "DELIVERED": colors.green, "Failed": colors.red };
 
 function ProgressBar({ pct, color }) {
   return (
@@ -357,7 +357,11 @@ function Prototype() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ flex: 1 }}>
                     {/* ADAPTER: Provide logical visual progress fallback state */}
-                    <ProgressBar pct={s.status === "IN_TRANSIT" ? 50 : s.status === "DELIVERED" ? 100 : 0} color={colors.green} />
+
+                    {/* const statusColor = { "In Transit": colors.accent, Pending: colors.yellow, Delivered: colors.green, Failed: colors.red }; */}
+
+
+                    <ProgressBar pct={s.status === "IN_TRANSIT" ? 50 : s.status === "DELIVERED" ? 100 : 0} color={statusColor[s.status]} />
                   </div>
                   {/* ADAPTER: Display cleanly converted latest window ISO value string */}
                   <span style={{ color: colors.muted, fontSize: 11, whiteSpace: "nowrap" }}>
@@ -373,6 +377,9 @@ function Prototype() {
             <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div>
+                  <span style={{ color: colors.accent, fontWeight: 700, fontSize: 15 }}>{selected.status}</span>
+                  <span style={{ color: colors.accent, fontWeight: 700, fontSize: 15 }}>ooo {statusColor[selected.status]}oo</span>
+
                   <span style={{ color: colors.accent, fontWeight: 700, fontSize: 15 }}>{selected.id}</span>
                   <span style={{ marginLeft: 10, color: statusColor[selected.status], fontWeight: 600, fontSize: 12 }}>{selected.status}</span>
                 </div>
