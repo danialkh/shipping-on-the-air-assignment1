@@ -47,9 +47,7 @@ Spin up the complete ecosystem alongside an isolated interactive global document
 
 Bash
 docker compose up --build -d
-
 🛰️ Cluster Port AllocationService ComponentInternal Domain URIPurposeAPI Documentationhttp://localhost:8080Interactive Swagger UI API EngineFrontend UIhttp://localhost:5173Living document & simulation interfaceOrder Servicehttp://localhost:3001Core booking & shipment recordsTracking Servicehttp://localhost:3002Telematics ledger & event ingestionMission Servicehttp://localhost:3003Flight path calculation & asset tracking
-
 
 Architectural Topology
 The system maps explicitly to 5 Bounded Contexts communicating asynchronously via Apache Kafka domain events.
