@@ -317,6 +317,40 @@ function Prototype() {
   const [progress, setProgress] = useState("list");
 
 
+  // 3. YOUR FUNCTION GOES HERE (Inside App, before return)
+  const handleCreateShipment = async () => {
+    const payload = {
+      customerId: "CUST-01",
+      origin: { address: form.from, lat: 45.4654, lon: 9.1866 },
+      destination: { address: form.to, lat: 45.4654, lon: 9.1866 },
+      packageSpec: {
+        weight: parseFloat(form.weight) || 0,
+        fragile: form.notes.toLowerCase().includes("fragile")
+      },
+      timeWindow: {
+        earliest: form.date ? new Date(form.date).toISOString() : new Date().toISOString(),
+        latest: form.date ? new Date(new Date(form.date).getTime() + 2 * 60 * 60 * 1000).toISOString() : new Date().toISOString()
+      }
+    };
+
+    try {
+      const response = await fetch("http://localhost:3001/shipments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Server error");
+      alert("Shipment created successfully!");
+      setForm({ from: "", to: "", weight: "", date: "", notes: "" });
+      setView("list");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to create shipment.");
+    }
+  }; // <--- Make sure this function closes properly
+
+
+
   
 
   // Fetch hook matching exact target URL
@@ -377,9 +411,6 @@ function Prototype() {
             <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div>
-                  <span style={{ color: colors.accent, fontWeight: 700, fontSize: 15 }}>{selected.status}</span>
-                  <span style={{ color: colors.accent, fontWeight: 700, fontSize: 15 }}>ooo {statusColor[selected.status]}oo</span>
-
                   <span style={{ color: colors.accent, fontWeight: 700, fontSize: 15 }}>{selected.id}</span>
                   <span style={{ marginLeft: 10, color: statusColor[selected.status], fontWeight: 600, fontSize: 12 }}>{selected.status}</span>
                 </div>
@@ -400,6 +431,8 @@ function Prototype() {
         </div>
       )}
 
+
+
       {view === "new" && (
         <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, maxWidth: 500 }}>
           <div style={{ color: colors.accent, fontWeight: 700, fontSize: 15, marginBottom: 16 }}>New Shipment Order</div>
@@ -413,11 +446,20 @@ function Prototype() {
             <label style={{ display: "block", color: colors.muted, fontSize: 12, marginBottom: 4 }}>Special instructions</label>
             <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} style={{ width: "100%", background: colors.surface2, border: `1px solid ${colors.border}`, borderRadius: 6, padding: "8px 10px", color: colors.text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
           </div>
-          <button onClick={() => { alert("Shipment SHP-005 created! A drone will be assigned shortly."); setView("list"); }} style={{ background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, padding: "10px 24px", fontWeight: 700, fontSize: 14, cursor: "pointer", width: "100%" }}>
+          
+          {/* Updated click handler here */}
+          <button 
+            onClick={handleCreateShipment} 
+            style={{ background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, padding: "10px 24px", fontWeight: 700, fontSize: 14, cursor: "pointer", width: "100%" }}
+          >
             Place Order →
           </button>
         </div>
       )}
+
+
+
+
     </div>
   );
 }
@@ -708,6 +750,7 @@ function InfoGrid({ items }) {
 
 export default function App() {
   const [active, setActive] = useState("overview");
+
 
   const content = {
     overview: <SectionOverview />,
